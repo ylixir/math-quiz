@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser
 import Element exposing (..)
 import Element.Background as Background
+import Element.Font as Font
 import Element.Input as Input
 import Html.Events
 import Json.Decode
@@ -28,7 +29,13 @@ type alias Problem =
     { numbers : List Int
     , answer : String
     , correct : Correct
+    , score : Int
     }
+
+
+init : () -> ( Problem, Cmd Message )
+init _ =
+    roll { numbers = [], answer = "", correct = SaisPas, score = 0 }
 
 
 type Message
@@ -58,7 +65,7 @@ update msg model =
             case String.toInt model.answer of
                 Just a ->
                     if a == correctAnswer then
-                        roll { model | correct = Vrai, numbers = [], answer = "" }
+                        roll { model | correct = Vrai, numbers = [], answer = "", score = model.score + 1 }
 
                     else
                         noRoll { model | correct = Faux }
@@ -67,10 +74,12 @@ update msg model =
                     noRoll { model | correct = SaisPas }
 
 
+noRoll : m -> ( m, Cmd n )
 noRoll model =
     ( model, Cmd.none )
 
 
+roll : m -> ( m, Cmd Message )
 roll model =
     ( model, Random.generate AddNumber (Random.int 0 10) )
 
@@ -82,11 +91,6 @@ cleanAnswer new old =
 
     else
         old
-
-
-init : () -> ( Problem, Cmd Message )
-init _ =
-    roll { numbers = [], answer = "", correct = SaisPas }
 
 
 listJoin : a -> List a -> List a
@@ -102,7 +106,7 @@ listJoin a b =
             head :: a :: listJoin a tail
 
 
-backgroundColor : Correct -> Attribute Message
+backgroundColor : Correct -> Attribute m
 backgroundColor correct =
     Background.color <|
         case correct of
@@ -116,7 +120,8 @@ backgroundColor correct =
                 rgb 255 255 0
 
 
-leftHandSide numbers =
+question : List Int -> List (Element m)
+question numbers =
     numbers
         |> List.map String.fromInt
         |> listJoin "×"
@@ -136,28 +141,41 @@ onEnter msg =
     htmlAttribute <| Html.Events.on "keydown" (Json.Decode.andThen isEnter Html.Events.keyCode)
 
 
-rightHandSide : String -> Element Message
-rightHandSide answer =
+answer : String -> Element Message
+answer a =
     Input.text
-        [ onEnter CheckAnswer ]
+        [ onEnter CheckAnswer
+        , width (60 |> px)
+        ]
         { onChange = ChangeAnswer
         , label = Input.labelHidden "Answer"
-        , text = answer
+        , text = a
         , placeholder = Nothing
         }
 
 
+centered : List (Attribute m)
+centered =
+    [ centerX, centerY ]
+
+
+equation : List Int -> String -> Element Message
+equation q a =
+    row centered <|
+        question q
+            ++ [ text " = ", answer a ]
+
+
+score : Int -> Element m
+score s =
+    el (centered ++ [ padding 20, Font.size 48 ]) (s |> String.fromInt |> text)
+
+
 view model =
     layout
-        [ backgroundColor model.correct
-        ]
+        [ backgroundColor model.correct ]
     <|
-        row
-            [ centerX
-            , centerY
+        column centered
+            [ score model.score
+            , equation model.numbers model.answer
             ]
-        <|
-            leftHandSide model.numbers
-                ++ [ text " = "
-                   , rightHandSide model.answer
-                   ]
