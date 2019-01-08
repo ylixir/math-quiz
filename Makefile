@@ -2,14 +2,17 @@ SOURCES = src/*.elm
 OBJECTS = obj/Main.js
 TEMPLATES = templates/Main.html
 APP = app/index.html
-
 debug: ELMFLAGS = --debug
+release: ELMFLAGS = --optimize
+ELM = nix run -c elm make $(ELMFLAGS)
+
 debug: app
 
-release: ELMFLAGS = --optimize
 release: app
 
-ELM = nix run -c elm make $(ELMFLAGS)
+format: $(SOURCES)
+	nix run -c elm-format --yes $<
+
 
 clean:
 	# -f suppresses missing file errors
