@@ -14,7 +14,7 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = (\ _ -> Sub.none)
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -37,35 +37,43 @@ type Message
     | AddNumber Int
 
 
-update : Message -> Problem -> (Problem, Cmd Message)
+update : Message -> Problem -> ( Problem, Cmd Message )
 update msg model =
     case msg of
         ChangeAnswer a ->
             noRoll { model | answer = cleanAnswer a model.answer, correct = SaisPas }
 
         AddNumber a ->
-            if [] == model.numbers
-            then roll {model|numbers=[a]}
-            else noRoll {model|numbers=a::model.numbers}
+            if [] == model.numbers then
+                roll { model | numbers = [ a ] }
+
+            else
+                noRoll { model | numbers = a :: model.numbers }
+
         CheckAnswer ->
             let
                 correctAnswer =
                     List.foldl (*) 1 model.numbers
-
             in
-                    case String.toInt model.answer of
-                        Just a ->
-                            if a == correctAnswer then
-                                roll {model | correct=Vrai, numbers=[], answer=""}
+            case String.toInt model.answer of
+                Just a ->
+                    if a == correctAnswer then
+                        roll { model | correct = Vrai, numbers = [], answer = "" }
 
-                            else
-                                noRoll {model | correct=Faux}
+                    else
+                        noRoll { model | correct = Faux }
 
-                        Nothing ->
-                            noRoll {model | correct=SaisPas}
+                Nothing ->
+                    noRoll { model | correct = SaisPas }
 
-noRoll model = (model, Cmd.none)
-roll model = (model, Random.generate AddNumber (Random.int 0 10))
+
+noRoll model =
+    ( model, Cmd.none )
+
+
+roll model =
+    ( model, Random.generate AddNumber (Random.int 0 10) )
+
 
 cleanAnswer : String -> String -> String
 cleanAnswer new old =
@@ -76,7 +84,7 @@ cleanAnswer new old =
         old
 
 
-init: ()->(Problem, Cmd Message)
+init : () -> ( Problem, Cmd Message )
 init _ =
     roll { numbers = [], answer = "", correct = SaisPas }
 
