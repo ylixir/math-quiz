@@ -1,3 +1,5 @@
 language: elm
-nix: 2.0.4
 script: make release
+
+before_install:
+  - curl https://nixos.org/nix/install | sh
