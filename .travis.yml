@@ -1,5 +1,5 @@
 language: elm
-script: elm make src/Main.js
+script: elm make src/Main.elm
 
 before_install:
   - curl https://nixos.org/nix/install | sh
