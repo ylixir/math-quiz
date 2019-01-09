@@ -4,4 +4,4 @@ script: make release
 before_install:
   - curl https://nixos.org/nix/install | sh
   - source ~/.nix-profile/etc/profile.d/nix.sh
-  - mkdir -p ~/.elm
+  - elm make src/Main.elm --output /dev/null
