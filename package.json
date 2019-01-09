@@ -1,0 +1,12 @@
+{
+  "name": "math-quiz",
+  "version": "1.0.0",
+  "description": "Simple quiz to practice times tables",
+  "repository": "git@github.com:ylixir/math-quiz.git",
+  "author": "Jon Allen <ylixir@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "uglify-js": "^3.4.9"
+  }
+}

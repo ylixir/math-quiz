@@ -1,31 +1,32 @@
 SOURCES = src/*.elm
-OBJECTS = obj/Main.js
-TEMPLATES = templates/Main.html
-APP = app/index.html
+
 debug: ELMFLAGS = --debug
+debug: MINIFY = cat
+debug: index.html
+
 release: ELMFLAGS = --optimize
-ELM = nix run -c elm make $(ELMFLAGS)
-
-debug: app
-
-release: app
+release: MINIFY = nix run -c yarn --silent uglifyjs
+release: clean node_modules/bin/uglifyjs index.html
 
 format: $(SOURCES)
 	nix run -c elm-format --yes $<
 
-
 clean:
 	# -f suppresses missing file errors
 	rm -rf obj
-	rm -rf app
+	rm -rf index.html
 
-app: $(APP)
+node_modules/bin/uglifyjs: package.json
+	nix run -c yarn install
 
-$(APP): $(OBJECTS) $(TEMPLATES)
+index.html: obj/release.js templates/Main.html
 	mkdir -p app
-	sed -e '/{{elmcode}}/r obj/Main.js' < templates/Main.html \
+	sed -e "/{{elmcode}}/r obj/release.js" < templates/Main.html \
 	| sed -e 's/{{elmcode}}//' > $@
 
-$(OBJECTS): $(SOURCES)
+obj/release.js: obj/Main.js
+	$(MINIFY) < $< > $@
+
+obj/Main.js: $(SOURCES)
 	mkdir -p obj
-	$(ELM) $< --output $@
+	nix run -c elm make $(ELMFLAGS) $< --output $@

@@ -4,6 +4,5 @@ in
   [
     pkgs.elmPackages.elm
     pkgs.elmPackages.elm-format
-#    yarn
-#    pkgs.nodejs-8_x
+    pkgs.yarn
   ]
