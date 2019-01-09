@@ -1,5 +1,6 @@
 obj
-index.html
+app
 
 node_modules
 elm-stuff
+yarn.lock
