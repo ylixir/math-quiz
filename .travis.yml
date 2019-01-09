@@ -1,5 +1,3 @@
-matrix:
-  include:
-    - language: nix
-      script: make release
-    - language: elm
+language: elm
+nix: 2.0.4
+script: make release
