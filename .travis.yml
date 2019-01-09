@@ -1,2 +1,5 @@
-language: nix
-script: make release
+matrix:
+  include:
+    - language: nix
+      script: make release
+    - language: elm
