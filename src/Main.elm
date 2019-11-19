@@ -5,11 +5,13 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
 import Element.Input as Input
+import Html exposing (Html)
 import Html.Events
 import Json.Decode
 import Random
 
 
+main : Program () Problem Message
 main =
     Browser.element
         { init = init
@@ -30,12 +32,13 @@ type alias Problem =
     , answer : String
     , correct : Correct
     , score : Int
+    , maxValue : Int
     }
 
 
 init : () -> ( Problem, Cmd Message )
 init _ =
-    roll { numbers = [], answer = "", correct = SaisPas, score = 0 }
+    roll { numbers = [], answer = "", correct = SaisPas, score = 0, maxValue = 12 }
 
 
 type Message
@@ -79,9 +82,9 @@ noRoll model =
     ( model, Cmd.none )
 
 
-roll : m -> ( m, Cmd Message )
+roll : Problem -> ( Problem, Cmd Message )
 roll model =
-    ( model, Random.generate AddNumber (Random.int 0 10) )
+    ( model, Random.generate AddNumber (Random.int 0 model.maxValue) )
 
 
 cleanAnswer : String -> String -> String
@@ -99,7 +102,7 @@ listJoin a b =
         [] ->
             []
 
-        head :: [] ->
+        _ :: [] ->
             b
 
         head :: tail ->
@@ -171,6 +174,7 @@ score s =
     el (centered ++ [ padding 20, Font.size 48 ]) (s |> String.fromInt |> text)
 
 
+view : Problem -> Html Message
 view model =
     layout
         [ backgroundColor model.correct ]
