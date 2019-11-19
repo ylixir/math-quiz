@@ -4,7 +4,7 @@ script: make release
 before_install:
   - curl https://nixos.org/nix/install | sh
   - source ~/.nix-profile/etc/profile.d/nix.sh
-  - elm make src/Main.elm --output /dev/null
+  - nix run -c elm make src/Main.elm --output /dev/null
 
 deploy:
   provider: pages
