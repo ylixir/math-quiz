@@ -3,6 +3,8 @@ module Main exposing (main)
 import Browser
 import Element exposing (..)
 import Element.Background as Background
+import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
@@ -21,6 +23,21 @@ main =
         }
 
 
+type Operation
+    = Multiplication
+    | Addition
+
+
+answerChecker : Operation -> (List Int -> Int)
+answerChecker op =
+    case op of
+        Multiplication ->
+            \numbers -> List.foldl (*) 1 numbers
+
+        Addition ->
+            \numbers -> List.foldl (+) 0 numbers
+
+
 type Correct
     = Vrai
     | Faux
@@ -33,25 +50,30 @@ type alias Problem =
     , correct : Correct
     , score : Int
     , maxValue : Int
+    , showSettings : Bool
+    , operation : Operation
     }
 
 
 init : () -> ( Problem, Cmd Message )
 init _ =
-    roll { numbers = [], answer = "", correct = SaisPas, score = 0, maxValue = 12 }
+    roll { numbers = [], answer = "", correct = SaisPas, score = 0, maxValue = 12, showSettings = False, operation = Multiplication }
 
 
 type Message
     = ChangeAnswer String
     | CheckAnswer
     | AddNumber Int
+    | ToggleSettings
+    | ChangeMaxValue String
+    | ChangeOperation Operation
 
 
 update : Message -> Problem -> ( Problem, Cmd Message )
 update msg model =
     case msg of
         ChangeAnswer a ->
-            noRoll { model | answer = cleanAnswer a model.answer, correct = SaisPas }
+            noRoll { model | answer = cleanInput a model.answer, correct = SaisPas }
 
         AddNumber a ->
             if [] == model.numbers then
@@ -60,10 +82,13 @@ update msg model =
             else
                 noRoll { model | numbers = a :: model.numbers }
 
+        ToggleSettings ->
+            ( { model | showSettings = not model.showSettings }, Cmd.none )
+
         CheckAnswer ->
             let
                 correctAnswer =
-                    List.foldl (*) 1 model.numbers
+                    model.numbers |> answerChecker model.operation
             in
             case String.toInt model.answer of
                 Just a ->
@@ -76,6 +101,20 @@ update msg model =
                 Nothing ->
                     noRoll { model | correct = SaisPas }
 
+        ChangeMaxValue maxString ->
+            let
+                maxValue =
+                    if maxString == "" then
+                        0
+
+                    else
+                        Maybe.withDefault model.maxValue <| String.toInt maxString
+            in
+            roll { model | maxValue = maxValue, correct = SaisPas, numbers = [], answer = "" }
+
+        ChangeOperation operation ->
+            roll { model | operation = operation, correct = SaisPas, numbers = [], answer = "" }
+
 
 noRoll : m -> ( m, Cmd n )
 noRoll model =
@@ -87,8 +126,8 @@ roll model =
     ( model, Random.generate AddNumber (Random.int 0 model.maxValue) )
 
 
-cleanAnswer : String -> String -> String
-cleanAnswer new old =
+cleanInput : String -> String -> String
+cleanInput new old =
     if new == "" || Nothing /= String.toInt new then
         new
 
@@ -123,11 +162,20 @@ backgroundColor correct =
                 rgb 255 255 0
 
 
-question : List Int -> List (Element m)
-question numbers =
+question : Operation -> List Int -> List (Element m)
+question op numbers =
+    let
+        opString =
+            case op of
+                Multiplication ->
+                    "×"
+
+                Addition ->
+                    "+"
+    in
     numbers
         |> List.map String.fromInt
-        |> listJoin "×"
+        |> listJoin opString
         |> List.map text
 
 
@@ -162,11 +210,11 @@ centered =
     [ centerX, centerY ]
 
 
-equation : List Int -> String -> Element Message
-equation q a =
+equation : Operation -> List Int -> String -> Element Message
+equation operation numbers message =
     row centered <|
-        question q
-            ++ [ text " = ", answer a ]
+        question operation numbers
+            ++ [ text " = ", answer message ]
 
 
 score : Int -> Element m
@@ -174,12 +222,72 @@ score s =
     el (centered ++ [ padding 20, Font.size 48 ]) (s |> String.fromInt |> text)
 
 
+settings : { a | maxValue : Int, showSettings : Bool, operation : Operation } -> Element Message
+settings { maxValue, showSettings, operation } =
+    if showSettings then
+        column [ width shrink, alignTop, height fill, Border.glow (rgb 0 0 0) 5 ]
+            [ row [ alignRight, Events.onClick ToggleSettings ]
+                [ settingsGear
+                ]
+            , row [] [ settingsPanel maxValue operation ]
+            ]
+
+    else
+        column [ width shrink, alignTop ]
+            [ row [ Events.onClick ToggleSettings ]
+                [ settingsGear
+                ]
+            ]
+
+
+settingsPanel : Int -> Operation -> Element Message
+settingsPanel maxValue operation =
+    column [ padding 20, spacing 20 ]
+        [ Input.text
+            [ onEnter ToggleSettings
+            , alignRight
+            ]
+            { onChange = ChangeMaxValue
+            , label = Input.labelAbove [] <| text "Maximum Value"
+            , text =
+                if maxValue == 0 then
+                    ""
+
+                else
+                    String.fromInt maxValue
+            , placeholder = Nothing
+            }
+        , Input.radio []
+            { onChange = ChangeOperation
+            , selected = Just operation
+            , label = Input.labelAbove [] <| text "Operation"
+            , options =
+                [ Input.option Addition <| text "Addition"
+                , Input.option Multiplication <| text "Multiplication"
+                ]
+            }
+        ]
+
+
+settingsGear : Element msg
+settingsGear =
+    text "⚙️"
+
+
+
+--note there is a gear here
+
+
 view : Problem -> Html Message
-view model =
+view m =
     layout
-        [ backgroundColor model.correct ]
+        [ backgroundColor m.correct ]
     <|
-        column centered
-            [ score model.score
-            , equation model.numbers model.answer
+        row
+            [ width fill, height fill ]
+            [ settings m
+            , column [ width fill, centerX, centerY ]
+                [ score m.score
+                , equation m.operation m.numbers m.answer
+                ]
             ]
